@@ -1,0 +1,21 @@
+{
+  "name": "django-foundation",
+  "version": "1.0.0",
+  "description": "Building a saas application using django app for a foundation and then building on top of it",
+  "main": "index.js",
+  "scripts": {
+    "watch": "tailwindcss -i src/staticfiles/base_tailwind/tailwind-input.css -o src/staticfiles/vendors/tailwind-out.css --watch",
+    "build": "tailwindcss -i src/staticfiles/base_tailwind/tailwind-input.css -o src/staticfiles/theme/saas-theme.min.css --build --minify"
+  },
+  "devDependencies": {
+    "flowbite": "^2.3.0",
+    "tailwindcss": "^3.4.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/debarshee2004/django-foundation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
