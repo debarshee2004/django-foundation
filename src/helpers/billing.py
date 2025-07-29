@@ -114,7 +114,7 @@ def get_checkout_session(stripe_id: str, raw: bool = True):
     return response.url
 
 
-def get_subscription(stripe_id: str, raw: bool = True):
+def get_subscription(stripe_id: str, raw: bool = True) -> Union[Any, Dict[str, Any]]:
     response = stripe.Subscription.retrieve(stripe_id)
     if raw:
         return response
@@ -142,7 +142,7 @@ def cancel_subscription(
     ] = "other",
     cancel_at_period_end: bool = False,
     raw: bool = True,
-):
+) -> Union[Any, Dict[str, Any]]:
     if cancel_at_period_end:
         response = stripe.Subscription.modify(
             stripe_id,

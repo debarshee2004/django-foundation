@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     # Custom apps
     "command",
     "visits",
+    "subscriptions",
     # Third-party apps
     "allauth",
     "allauth.account",
