@@ -61,6 +61,11 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Vendor stuff:
+src/static/vendor
+local-cdn/
+prod-cdn/
+
 # Flask stuff:
 instance/
 .webassets-cache
