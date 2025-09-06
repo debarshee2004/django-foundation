@@ -24,11 +24,6 @@ logger = logging.getLogger("auth")
 User = get_user_model()
 
 
-# ============================================================================
-# AUTHENTICATION VIEWS
-# ============================================================================
-
-
 @csrf_protect
 @never_cache  # Prevent caching of login page
 @require_http_methods(["GET", "POST"])  # Only allow GET and POST methods
@@ -551,11 +546,6 @@ def change_password_view(request):
     return redirect("auth:profile")
 
 
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-
 def _log_login_attempt(
     email, success, ip_address, user_agent, failure_reason=None, user=None
 ):
@@ -609,11 +599,6 @@ def _is_ip_blocked(ip_address, max_attempts=5, window_minutes=15):
     except Exception as e:
         logger.error(f"Error checking IP block status: {str(e)}")
         return False  # Don't block if we can't check
-
-
-# ============================================================================
-# API ENDPOINTS (for AJAX requests)
-# ============================================================================
 
 
 @require_http_methods(["POST"])
