@@ -1,64 +1,515 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import transaction
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
+from django.conf import settings
+import logging
+from datetime import timedelta
 
-# from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
+from .models import CustomUser, UserProfile, LoginAttempt
+from .utils import get_client_ip, get_user_agent, is_safe_url
+
+# Initialize logger for authentication events
+logger = logging.getLogger('auth')
 
 User = get_user_model()
 
 
-# Create your views here.
+# ============================================================================
+# AUTHENTICATION VIEWS
+# ============================================================================
+
+@csrf_protect
+@never_cache  # Prevent caching of login page
+@require_http_methods(["GET", "POST"])  # Only allow GET and POST methods
 def login_view(request):
+    """
+    Handle user login with email/password authentication
+    
+    Features:
+    - Email-based authentication
+    - Login attempt tracking for security
+    - Rate limiting protection
+    - Redirect to intended page after login
+    
+    GET: Display login form
+    POST: Process login attempt
+    """
+    # Redirect authenticated users away from login page
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    # Get the page user was trying to access
+    next_url = request.GET.get('next', '/')
+    
     if request.method == "POST":
-        username = request.POST.get("username") or None
-        password = request.POST.get("password") or None
-        # eval("print('hello')")
-        if all([username, password]):
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.success(request, f"Welcome back, {user.username}!")
-                return redirect("/")
+        # Extract login credentials from form
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password", "")
+        remember_me = request.POST.get("remember_me", False)
+        
+        # Get client information for security logging
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
+        
+        # Basic validation
+        if not email or not password:
+            messages.error(request, "Please provide both email and password.")
+            _log_login_attempt(email, False, ip_address, user_agent, "missing_credentials")
+            return render(request, "auth/login.html", {"next": next_url})
+        
+        # Validate email format
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Please enter a valid email address.")
+            _log_login_attempt(email, False, ip_address, user_agent, "invalid_email_format")
+            return render(request, "auth/login.html", {"next": next_url})
+        
+        # Check for too many failed attempts from this IP
+        if _is_ip_blocked(ip_address):
+            messages.error(request, "Too many failed login attempts. Please try again later.")
+            _log_login_attempt(email, False, ip_address, user_agent, "too_many_attempts")
+            return render(request, "auth/login.html", {"next": next_url})
+        
+        # Attempt authentication
+        user = authenticate(request, username=email, password=password)
+        
+        if user is not None:
+            # Check if user account is active
+            if not user.is_active:
+                messages.error(request, "Your account has been disabled. Please contact support.")
+                _log_login_attempt(email, False, ip_address, user_agent, "account_disabled")
+                return render(request, "auth/login.html", {"next": next_url})
+            
+            # Check if email is verified (optional requirement)
+            if hasattr(user, 'email_verified') and not user.email_verified and settings.REQUIRE_EMAIL_VERIFICATION:
+                messages.error(request, "Please verify your email address before logging in.")
+                _log_login_attempt(email, False, ip_address, user_agent, "email_not_verified")
+                return render(request, "auth/login.html", {"next": next_url})
+            
+            # Successful login
+            login(request, user)
+            
+            # Set session expiry based on "remember me"
+            if not remember_me:
+                # Session expires when browser closes
+                request.session.set_expiry(0)
             else:
-                messages.error(request, "Invalid username or password.")
+                # Session expires in 30 days
+                request.session.set_expiry(timedelta(days=30))
+            
+            # Update user's last login information
+            user.last_login_ip = ip_address
+            user.save(update_fields=['last_login', 'last_login_ip'])
+            
+            # Log successful attempt
+            _log_login_attempt(email, True, ip_address, user_agent, user=user)
+            
+            # Success message
+            messages.success(request, f"Welcome back, {user.get_short_name()}!")
+            
+            # Redirect to intended page or home
+            if next_url and is_safe_url(next_url, request.get_host()):
+                return redirect(next_url)
+            return redirect('home')
+        
         else:
-            messages.error(request, "Please provide both username and password.")
-    return render(request, "auth/login.html", {})
+            # Failed authentication
+            messages.error(request, "Invalid email or password.")
+            _log_login_attempt(email, False, ip_address, user_agent, "invalid_credentials")
+    
+    return render(request, "auth/login.html", {"next": next_url})
 
 
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def register_view(request):
+    """
+    Handle user registration with email/password
+    
+    Features:
+    - Email uniqueness validation
+    - Password strength requirements
+    - Automatic profile creation
+    - Email verification initiation
+    
+    GET: Display registration form
+    POST: Process registration
+    """
+    # Redirect authenticated users away from registration page
+    if request.user.is_authenticated:
+        return redirect('home')
+    
     if request.method == "POST":
-        # print(request.POST)
-        username = request.POST.get("username") or None
-        email = request.POST.get("email") or None
-        password = request.POST.get("password") or None
-        # Django Forms
-        # username_exists = User.objects.filter(username__iexact=username).exists()
-        # email_exists = User.objects.filter(email__iexact=email).exists()
-        if all([username, email, password]):
-            # Check if username already exists
-            if User.objects.filter(username__iexact=username).exists():
-                messages.error(
-                    request, "Username already exists. Please choose a different one."
+        # Extract registration data
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password", "")
+        password_confirm = request.POST.get("password_confirm", "")
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        terms_accepted = request.POST.get("terms_accepted", False)
+        
+        # Basic validation
+        errors = []
+        
+        # Required fields validation
+        if not all([username, email, password, password_confirm]):
+            errors.append("Please fill in all required fields.")
+        
+        # Email format validation
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors.append("Please enter a valid email address.")
+        
+        # Password confirmation
+        if password != password_confirm:
+            errors.append("Passwords do not match.")
+        
+        # Password strength validation
+        if len(password) < 8:
+            errors.append("Password must be at least 8 characters long.")
+        
+        # Terms acceptance (if required)
+        if settings.REQUIRE_TERMS_ACCEPTANCE and not terms_accepted:
+            errors.append("You must accept the terms and conditions.")
+        
+        # Check if username already exists
+        if username and User.objects.filter(username__iexact=username).exists():
+            errors.append("Username already exists. Please choose a different one.")
+        
+        # Check if email already exists
+        if email and User.objects.filter(email__iexact=email).exists():
+            errors.append("Email already registered. Please use a different email or try logging in.")
+        
+        # If there are validation errors, show them
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, "auth/register.html", {
+                "username": username,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+            })
+        
+        # Create user account with transaction to ensure data consistency
+        try:
+            with transaction.atomic():
+                # Create the user
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name
                 )
-            # Check if email already exists
-            elif User.objects.filter(email__iexact=email).exists():
-                messages.error(
-                    request, "Email already registered. Please use a different email."
+                
+                # Create associated user profile
+                UserProfile.objects.create(
+                    user=user,
+                    created_at=timezone.now()
                 )
-            else:
-                try:
-                    User.objects.create_user(username, email=email, password=password)
+                
+                # Log successful registration
+                logger.info(f"New user registered: {email} (username: {username})")
+                
+                # Send verification email (if email verification is enabled)
+                if settings.ENABLE_EMAIL_VERIFICATION:
+                    # This would integrate with your email service
+                    # send_verification_email(user)
                     messages.success(
-                        request, "Account created successfully! Please log in."
+                        request, 
+                        "Account created successfully! Please check your email to verify your account."
                     )
-                    return redirect("/login/")
-                except Exception as e:
-                    messages.error(
-                        request,
-                        "An error occurred while creating your account. Please try again.",
+                else:
+                    messages.success(
+                        request, 
+                        "Account created successfully! You can now log in."
                     )
-        else:
-            messages.error(request, "Please fill in all fields.")
+                
+                return redirect('auth:login')
+                
+        except Exception as e:
+            # Log the error for debugging
+            logger.error(f"Registration failed for {email}: {str(e)}")
+            messages.error(
+                request,
+                "An error occurred while creating your account. Please try again."
+            )
+    
     return render(request, "auth/register.html", {})
+
+
+@login_required
+@require_http_methods(["POST"])
+def logout_view(request):
+    """
+    Handle user logout
+    
+    Features:
+    - Secure session cleanup
+    - Logout logging
+    - Redirect to appropriate page
+    """
+    user_email = request.user.email if request.user.is_authenticated else "Unknown"
+    
+    # Log the logout
+    logger.info(f"User logged out: {user_email}")
+    
+    # Clear the session and log out
+    logout(request)
+    
+    # Success message
+    messages.success(request, "You have been successfully logged out.")
+    
+    # Redirect to home page or login page
+    next_url = request.GET.get('next', '/')
+    if next_url and is_safe_url(next_url, request.get_host()):
+        return redirect(next_url)
+    
+    return redirect('home')
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def profile_view(request):
+    """
+    Display and update user profile information
+    
+    Features:
+    - View current profile data
+    - Update profile information
+    - Change password functionality
+    - Account settings management
+    """
+    user = request.user
+    profile, created = UserProfile.objects.get_or_create(user=user)
+    
+    if request.method == "POST":
+        # Update profile information
+        user.first_name = request.POST.get("first_name", "").strip()
+        user.last_name = request.POST.get("last_name", "").strip()
+        user.receive_marketing_emails = bool(request.POST.get("receive_marketing_emails"))
+        
+        profile.bio = request.POST.get("bio", "").strip()
+        profile.phone_number = request.POST.get("phone_number", "").strip()
+        profile.country = request.POST.get("country", "").strip()
+        profile.timezone = request.POST.get("timezone", "UTC")
+        profile.language_preference = request.POST.get("language_preference", "en")
+        profile.email_notifications = bool(request.POST.get("email_notifications"))
+        profile.push_notifications = bool(request.POST.get("push_notifications"))
+        
+        try:
+            with transaction.atomic():
+                user.save()
+                profile.save()
+                messages.success(request, "Profile updated successfully!")
+                
+        except Exception as e:
+            logger.error(f"Profile update failed for {user.email}: {str(e)}")
+            messages.error(request, "Failed to update profile. Please try again.")
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'timezones': [
+            ('UTC', 'UTC'),
+            ('US/Eastern', 'Eastern Time'),
+            ('US/Central', 'Central Time'),
+            ('US/Mountain', 'Mountain Time'),
+            ('US/Pacific', 'Pacific Time'),
+            ('Europe/London', 'London'),
+            ('Europe/Paris', 'Paris'),
+            ('Asia/Tokyo', 'Tokyo'),
+            ('Asia/Kolkata', 'India'),
+        ],
+        'languages': [
+            ('en', 'English'),
+            ('es', 'Spanish'),
+            ('fr', 'French'),
+            ('de', 'German'),
+            ('hi', 'Hindi'),
+        ]
+    }
+    
+    return render(request, "auth/profile.html", context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def change_password_view(request):
+    """
+    Handle password changes for authenticated users
+    
+    Features:
+    - Current password verification
+    - New password strength validation
+    - Session invalidation for security
+    """
+    current_password = request.POST.get("current_password", "")
+    new_password = request.POST.get("new_password", "")
+    new_password_confirm = request.POST.get("new_password_confirm", "")
+    
+    # Validation
+    if not all([current_password, new_password, new_password_confirm]):
+        messages.error(request, "Please fill in all password fields.")
+        return redirect('auth:profile')
+    
+    # Verify current password
+    if not request.user.check_password(current_password):
+        messages.error(request, "Current password is incorrect.")
+        return redirect('auth:profile')
+    
+    # Check new password confirmation
+    if new_password != new_password_confirm:
+        messages.error(request, "New passwords do not match.")
+        return redirect('auth:profile')
+    
+    # Password strength validation
+    if len(new_password) < 8:
+        messages.error(request, "New password must be at least 8 characters long.")
+        return redirect('auth:profile')
+    
+    try:
+        # Change password
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        # Log password change
+        logger.info(f"Password changed for user: {request.user.email}")
+        
+        messages.success(request, "Password changed successfully! Please log in again.")
+        
+        # Logout user to force re-authentication with new password
+        logout(request)
+        return redirect('auth:login')
+        
+    except Exception as e:
+        logger.error(f"Password change failed for {request.user.email}: {str(e)}")
+        messages.error(request, "Failed to change password. Please try again.")
+    
+    return redirect('auth:profile')
+
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+def _log_login_attempt(email, success, ip_address, user_agent, failure_reason=None, user=None):
+    """
+    Log login attempts for security monitoring
+    
+    Args:
+        email: Email address used in attempt
+        success: Whether login was successful
+        ip_address: Client IP address
+        user_agent: Browser user agent
+        failure_reason: Reason for failure (if applicable)
+        user: User object (if login was successful)
+    """
+    try:
+        LoginAttempt.objects.create(
+            user=user,
+            email_attempted=email,
+            success=success,
+            failure_reason=failure_reason or "",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            attempted_at=timezone.now()
+        )
+    except Exception as e:
+        # Don't let logging errors break the login flow
+        logger.error(f"Failed to log login attempt: {str(e)}")
+
+
+def _is_ip_blocked(ip_address, max_attempts=5, window_minutes=15):
+    """
+    Check if an IP address should be blocked due to too many failed attempts
+    
+    Args:
+        ip_address: IP address to check
+        max_attempts: Maximum failed attempts allowed
+        window_minutes: Time window to check attempts within
+    
+    Returns:
+        bool: True if IP should be blocked
+    """
+    try:
+        # Check failed attempts in the last window_minutes
+        since = timezone.now() - timedelta(minutes=window_minutes)
+        failed_attempts = LoginAttempt.objects.filter(
+            ip_address=ip_address,
+            success=False,
+            attempted_at__gte=since
+        ).count()
+        
+        return failed_attempts >= max_attempts
+        
+    except Exception as e:
+        logger.error(f"Error checking IP block status: {str(e)}")
+        return False  # Don't block if we can't check
+
+
+# ============================================================================
+# API ENDPOINTS (for AJAX requests)
+# ============================================================================
+
+@require_http_methods(["POST"])
+def check_email_availability(request):
+    """
+    AJAX endpoint to check if email is available during registration
+    
+    Returns JSON response with availability status
+    """
+    email = request.POST.get("email", "").strip().lower()
+    
+    if not email:
+        return JsonResponse({"available": False, "message": "Email is required"})
+    
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"available": False, "message": "Invalid email format"})
+    
+    exists = User.objects.filter(email__iexact=email).exists()
+    
+    return JsonResponse({
+        "available": not exists,
+        "message": "Email is available" if not exists else "Email already registered"
+    })
+
+
+@require_http_methods(["POST"])
+def check_username_availability(request):
+    """
+    AJAX endpoint to check if username is available during registration
+    
+    Returns JSON response with availability status
+    """
+    username = request.POST.get("username", "").strip()
+    
+    if not username:
+        return JsonResponse({"available": False, "message": "Username is required"})
+    
+    if len(username) < 3:
+        return JsonResponse({"available": False, "message": "Username must be at least 3 characters"})
+    
+    exists = User.objects.filter(username__iexact=username).exists()
+    
+    return JsonResponse({
+        "available": not exists,
+        "message": "Username is available" if not exists else "Username already taken"
+    })
