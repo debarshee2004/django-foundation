@@ -50,6 +50,7 @@ urlpatterns = [
     ),
     path("accounts/", include("allauth.urls")),
     path("auth/", include("auth.urls")),  # Our custom auth app URLs
+    path("customers/", include("customers.urls")),  # Customer management URLs
     path("protected/user-only/", user_only_view),
     path("protected/staff-only/", staff_only_view),
     path("protected/", pw_protected_view),

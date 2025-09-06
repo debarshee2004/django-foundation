@@ -6,15 +6,61 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-3xl mx-auto">
-    <!-- Header -->
+    <!-- Header with User Info -->
     <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
       <div class="px-4 py-5 sm:p-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">
-          Account Settings
-        </h1>
-        <p class="text-gray-600">
-          Manage your account information and preferences
-        </p>
+        <div class="flex items-center space-x-6">
+          <!-- Avatar -->
+          <div class="shrink-0">
+            {% if profile.avatar %}
+              <img class="h-24 w-24 object-cover rounded-full border-4 border-white shadow-lg" src="{{ profile.avatar }}" alt="{{ user.get_full_name }}">
+            {% else %}
+              <div class="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center border-4 border-white shadow-lg">
+                <span class="text-white text-2xl font-bold">
+                  {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|default:""|upper }}
+                </span>
+              </div>
+            {% endif %}
+          </div>
+          <!-- User Info -->
+          <div class="flex-1">
+            <h1 class="text-2xl font-bold text-gray-900">
+              {{ user.get_full_name|default:user.username }}
+            </h1>
+            <p class="text-lg text-gray-600">{{ user.email }}</p>
+            <div class="flex items-center space-x-4 mt-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if user.email_verified %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                {% if user.email_verified %}
+                  <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  Email Verified
+                {% else %}
+                  <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                  </svg>
+                  Email Not Verified
+                {% endif %}
+              </span>
+              <span class="text-sm text-gray-500">Member since {{ user.date_joined|date:"F Y" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <div class="border-t border-gray-200">
+        <nav class="flex -mb-px">
+          <button onclick="showTab('profile')" class="tab-button active flex-1 py-4 px-6 text-center border-b-2 border-indigo-500 text-indigo-600 font-medium text-sm">
+            Profile Information
+          </button>
+          <button onclick="showTab('security')" class="tab-button flex-1 py-4 px-6 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm">
+            Security Settings
+          </button>
+          <button onclick="showTab('preferences')" class="tab-button flex-1 py-4 px-6 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm">
+            Preferences
+          </button>
+        </nav>
       </div>
     </div>
 
@@ -29,220 +75,173 @@
       </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Profile Information -->
-      <div class="lg:col-span-2">
+    <!-- Tab Content -->
+    <div class="space-y-6">
+      <!-- Profile Information Tab -->
+      <div id="profile-tab" class="tab-content">
         <div class="bg-white overflow-hidden shadow rounded-lg">
           <div class="px-4 py-5 sm:p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">
-              Profile Information
-            </h2>
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h2 class="text-lg font-medium text-gray-900">Profile Information</h2>
+                <p class="text-sm text-gray-600">Update your account's profile information and email address.</p>
+              </div>
+              <button onclick="toggleEditMode()" id="edit-toggle" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                </svg>
+                Edit Profile
+              </button>
+            </div>
             
-            <form method="POST" action="{% url 'auth:profile' %}">
+            <form method="POST" action="{% url 'auth:profile' %}" enctype="multipart/form-data" id="profile-form">
               {% csrf_token %}
               
-              <!-- Basic Information -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <!-- Avatar Upload Section -->
+              <div class="flex items-center space-x-6 mb-6">
+                <div class="shrink-0">
+                  {% if profile.avatar %}
+                    <img class="h-20 w-20 object-cover rounded-full" src="{{ profile.avatar }}" alt="{{ user.get_full_name }}" id="avatar-preview">
+                  {% else %}
+                    <div class="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center" id="avatar-preview">
+                      <span class="text-white text-xl font-bold">
+                        {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|default:""|upper }}
+                      </span>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="edit-field" style="display: none;">
+                  <label class="block text-sm font-medium text-gray-700">Profile Photo</label>
+                  <div class="mt-1 flex items-center space-x-3">
+                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(this)">
+                    <button type="button" onclick="document.getElementById('avatar-input').click()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                      Change Photo
+                    </button>
+                    {% if profile.avatar %}
+                      <button type="button" onclick="removeAvatar()" class="text-sm text-red-600 hover:text-red-900">Remove</button>
+                    {% endif %}
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">JPG, GIF or PNG. Max size 5MB.</p>
+                </div>
+              </div>
+
+              <!-- Personal Information -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label for="first_name" class="block text-sm font-medium text-gray-700">
-                    First Name
-                  </label>
+                  <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
                   <input 
                     id="first_name" 
                     name="first_name" 
                     type="text" 
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 read-only:bg-gray-50"
                     value="{{ user.first_name }}"
+                    readonly
                   >
                 </div>
                 
                 <div>
-                  <label for="last_name" class="block text-sm font-medium text-gray-700">
-                    Last Name
-                  </label>
+                  <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
                   <input 
                     id="last_name" 
                     name="last_name" 
                     type="text" 
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 read-only:bg-gray-50"
                     value="{{ user.last_name }}"
+                    readonly
                   >
                 </div>
               </div>
 
-              <!-- Read-only fields -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <!-- Contact Information -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">
-                    Username
-                  </label>
+                  <label class="block text-sm font-medium text-gray-700">Username</label>
                   <input 
                     type="text" 
                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
                     value="{{ user.username }}"
                     readonly
                   >
-                  <p class="mt-1 text-sm text-gray-500">
-                    Username cannot be changed
-                  </p>
+                  <p class="mt-1 text-xs text-gray-500">Username cannot be changed</p>
                 </div>
                 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">
-                    Email Address
-                  </label>
-                  <input 
-                    type="email" 
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                    value="{{ user.email }}"
-                    readonly
-                  >
-                  <p class="mt-1 text-sm text-gray-500">
+                  <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                  <div class="mt-1 flex rounded-md shadow-sm">
+                    <input 
+                      type="email" 
+                      class="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm bg-gray-50"
+                      value="{{ user.email }}"
+                      readonly
+                    >
+                    {% if not user.email_verified %}
+                      <button type="button" class="relative -ml-px inline-flex items-center px-3 py-2 border border-gray-300 bg-indigo-50 text-sm font-medium text-indigo-700 rounded-r-md hover:bg-indigo-100">
+                        Verify
+                      </button>
+                    {% endif %}
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">
                     {% if user.email_verified %}
                       <span class="text-green-600">✓ Verified</span>
                     {% else %}
-                      <span class="text-yellow-600">⚠ Not verified</span>
+                      <span class="text-yellow-600">⚠ Not verified - Click to verify</span>
                     {% endif %}
                   </p>
                 </div>
               </div>
 
-              <!-- Bio -->
+              <!-- Bio and Additional Info -->
               <div class="mb-6">
-                <label for="bio" class="block text-sm font-medium text-gray-700">
-                  Bio
-                </label>
+                <label for="bio" class="block text-sm font-medium text-gray-700">Bio</label>
                 <textarea 
                   id="bio" 
                   name="bio" 
-                  rows="3"
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  rows="4"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 read-only:bg-gray-50 resize-none"
                   placeholder="Tell us about yourself..."
+                  readonly
                 >{{ profile.bio }}</textarea>
+                <div class="mt-1 text-xs text-gray-500 flex justify-between">
+                  <span>Brief description for your profile. Maximum 500 characters.</span>
+                  <span id="bio-counter">{{ profile.bio|length }}/500</span>
+                </div>
               </div>
 
-              <!-- Contact Information -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <!-- Location and Contact -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label for="phone_number" class="block text-sm font-medium text-gray-700">
-                    Phone Number
-                  </label>
+                  <label for="phone_number" class="block text-sm font-medium text-gray-700">Phone Number</label>
                   <input 
                     id="phone_number" 
                     name="phone_number" 
                     type="tel" 
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 read-only:bg-gray-50"
                     value="{{ profile.phone_number }}"
                     placeholder="+1 (555) 123-4567"
+                    readonly
                   >
                 </div>
                 
                 <div>
-                  <label for="country" class="block text-sm font-medium text-gray-700">
-                    Country
-                  </label>
+                  <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
                   <input 
                     id="country" 
                     name="country" 
                     type="text" 
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 read-only:bg-gray-50"
                     value="{{ profile.country }}"
                     placeholder="United States"
+                    readonly
                   >
                 </div>
               </div>
 
-              <!-- Preferences -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label for="timezone" class="block text-sm font-medium text-gray-700">
-                    Timezone
-                  </label>
-                  <select 
-                    id="timezone" 
-                    name="timezone"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {% for tz_value, tz_label in timezones %}
-                      <option value="{{ tz_value }}" {% if profile.timezone == tz_value %}selected{% endif %}>
-                        {{ tz_label }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
-                
-                <div>
-                  <label for="language_preference" class="block text-sm font-medium text-gray-700">
-                    Language
-                  </label>
-                  <select 
-                    id="language_preference" 
-                    name="language_preference"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {% for lang_code, lang_name in languages %}
-                      <option value="{{ lang_code }}" {% if profile.language_preference == lang_code %}selected{% endif %}>
-                        {{ lang_name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-
-              <!-- Notification Preferences -->
-              <div class="mb-6">
-                <h3 class="text-md font-medium text-gray-900 mb-3">
-                  Notification Preferences
-                </h3>
-                
-                <div class="space-y-3">
-                  <div class="flex items-center">
-                    <input 
-                      id="email_notifications" 
-                      name="email_notifications" 
-                      type="checkbox" 
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      {% if profile.email_notifications %}checked{% endif %}
-                    >
-                    <label for="email_notifications" class="ml-2 block text-sm text-gray-900">
-                      Email notifications
-                    </label>
-                  </div>
-                  
-                  <div class="flex items-center">
-                    <input 
-                      id="push_notifications" 
-                      name="push_notifications" 
-                      type="checkbox" 
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      {% if profile.push_notifications %}checked{% endif %}
-                    >
-                    <label for="push_notifications" class="ml-2 block text-sm text-gray-900">
-                      Push notifications
-                    </label>
-                  </div>
-                  
-                  <div class="flex items-center">
-                    <input 
-                      id="receive_marketing_emails" 
-                      name="receive_marketing_emails" 
-                      type="checkbox" 
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      {% if user.receive_marketing_emails %}checked{% endif %}
-                    >
-                    <label for="receive_marketing_emails" class="ml-2 block text-sm text-gray-900">
-                      Receive marketing emails
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Submit Button -->
-              <div class="flex justify-end">
-                <button 
-                  type="submit" 
-                  class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
+              <!-- Form Actions -->
+              <div class="edit-actions flex justify-between" style="display: none;">
+                <button type="button" onclick="cancelEdit()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                   Save Changes
                 </button>
               </div>
@@ -251,162 +250,657 @@
         </div>
       </div>
 
-      <!-- Sidebar -->
-      <div class="space-y-6">
-        <!-- Account Status -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-3">
-              Account Status
-            </h3>
-            
-            <div class="space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Account Type:</span>
-                <span class="text-sm font-medium text-gray-900">
-                  {% if user.is_superuser %}
-                    Administrator
-                  {% elif user.is_staff %}
-                    Staff
-                  {% else %}
-                    Regular User
-                  {% endif %}
-                </span>
-              </div>
-              
-              <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Member Since:</span>
-                <span class="text-sm font-medium text-gray-900">
-                  {{ user.date_joined|date:"M Y" }}
-                </span>
-              </div>
-              
-              <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Last Login:</span>
-                <span class="text-sm font-medium text-gray-900">
-                  {% if user.last_login %}
-                    {{ user.last_login|timesince }} ago
+      <!-- Security Settings Tab -->
+      <div id="security-tab" class="tab-content hidden">
+        <div class="space-y-6">
+          <!-- Change Password -->
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900">Password</h3>
+                  <p class="text-sm text-gray-600">Update your password to keep your account secure.</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                  Last changed: 
+                  {% if user.password_changed_at %}
+                    {{ user.password_changed_at|timesince }} ago
                   {% else %}
                     Never
                   {% endif %}
+                </div>
+              </div>
+              
+              <form method="POST" action="{% url 'auth:change_password' %}" id="password-form">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label for="current_password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                    <div class="mt-1 relative">
+                      <input 
+                        id="current_password" 
+                        name="current_password" 
+                        type="password" 
+                        required
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                      <button type="button" onclick="togglePasswordVisibility('current_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label for="new_password" class="block text-sm font-medium text-gray-700">New Password</label>
+                    <div class="mt-1 relative">
+                      <input 
+                        id="new_password" 
+                        name="new_password" 
+                        type="password" 
+                        required
+                        minlength="8"
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        onkeyup="checkPasswordStrength(this.value)"
+                      >
+                      <button type="button" onclick="togglePasswordVisibility('new_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <!-- Password Strength Indicator -->
+                    <div class="mt-2">
+                      <div class="flex space-x-1">
+                        <div class="password-strength-bar h-1 bg-gray-200 rounded flex-1"></div>
+                        <div class="password-strength-bar h-1 bg-gray-200 rounded flex-1"></div>
+                        <div class="password-strength-bar h-1 bg-gray-200 rounded flex-1"></div>
+                        <div class="password-strength-bar h-1 bg-gray-200 rounded flex-1"></div>
+                      </div>
+                      <p class="text-xs text-gray-500 mt-1" id="password-strength-text">Password strength</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label for="new_password_confirm" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                    <div class="mt-1 relative">
+                      <input 
+                        id="new_password_confirm" 
+                        name="new_password_confirm" 
+                        type="password" 
+                        required
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        onkeyup="checkPasswordMatch()"
+                      >
+                      <button type="button" onclick="togglePasswordVisibility('new_password_confirm')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="text-xs mt-1" id="password-match-text"></p>
+                  </div>
+                </div>
+                
+                <div class="mt-6">
+                  <button 
+                    type="submit" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    Update Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Two-Factor Authentication -->
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900">Two-Factor Authentication</h3>
+                  <p class="text-sm text-gray-600">Add an extra layer of security to your account.</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  Not Enabled
                 </span>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900">Authenticator App</h4>
+                    <p class="text-sm text-gray-600">Use an authenticator app to generate time-based codes.</p>
+                  </div>
+                  <button class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Enable
+                  </button>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900">Email Codes</h4>
+                    <p class="text-sm text-gray-600">Receive verification codes via email.</p>
+                  </div>
+                  <button class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Enable
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Change Password -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-3">
-              Change Password
-            </h3>
-            
-            <form method="POST" action="{% url 'auth:change_password' %}">
-              {% csrf_token %}
+          <!-- Social Account Connections -->
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Connected Accounts</h3>
               
               <div class="space-y-4">
-                <div>
-                  <label for="current_password" class="block text-sm font-medium text-gray-700">
-                    Current Password
-                  </label>
-                  <input 
-                    id="current_password" 
-                    name="current_password" 
-                    type="password" 
-                    required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Google</h4>
+                      <p class="text-sm text-gray-600">Not connected</p>
+                    </div>
+                  </div>
+                  <a href="{% url 'google_oauth2_login' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Connect
+                  </a>
                 </div>
                 
-                <div>
-                  <label for="new_password" class="block text-sm font-medium text-gray-700">
-                    New Password
-                  </label>
-                  <input 
-                    id="new_password" 
-                    name="new_password" 
-                    type="password" 
-                    required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                </div>
-                
-                <div>
-                  <label for="new_password_confirm" class="block text-sm font-medium text-gray-700">
-                    Confirm New Password
-                  </label>
-                  <input 
-                    id="new_password_confirm" 
-                    name="new_password_confirm" 
-                    type="password" 
-                    required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">GitHub</h4>
+                      <p class="text-sm text-gray-600">Not connected</p>
+                    </div>
+                  </div>
+                  <a href="{% url 'github_login' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Connect
+                  </a>
                 </div>
               </div>
               
               <div class="mt-4">
+                <a href="{% url 'socialaccount_connections' %}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                  Manage all connected accounts →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferences Tab -->
+      <div id="preferences-tab" class="tab-content hidden">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="px-4 py-5 sm:p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-6">Preferences & Settings</h2>
+            
+            <form method="POST" action="{% url 'auth:profile' %}">
+              {% csrf_token %}
+              
+              <!-- Localization Preferences -->
+              <div class="mb-8">
+                <h3 class="text-md font-medium text-gray-900 mb-4">Localization</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label for="timezone" class="block text-sm font-medium text-gray-700">Timezone</label>
+                    <select 
+                      id="timezone" 
+                      name="timezone"
+                      class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {% for tz_value, tz_label in timezones %}
+                        <option value="{{ tz_value }}" {% if profile.timezone == tz_value %}selected{% endif %}>
+                          {{ tz_label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label for="language_preference" class="block text-sm font-medium text-gray-700">Language</label>
+                    <select 
+                      id="language_preference" 
+                      name="language_preference"
+                      class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {% for lang_code, lang_name in languages %}
+                        <option value="{{ lang_code }}" {% if profile.language_preference == lang_code %}selected{% endif %}>
+                          {{ lang_name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notification Preferences -->
+              <div class="mb-8">
+                <h3 class="text-md font-medium text-gray-900 mb-4">Notifications</h3>
+                
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Email Notifications</h4>
+                      <p class="text-sm text-gray-600">Receive email notifications for account activity</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        name="email_notifications" 
+                        class="sr-only peer"
+                        {% if profile.email_notifications %}checked{% endif %}
+                      >
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Push Notifications</h4>
+                      <p class="text-sm text-gray-600">Receive push notifications on your devices</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        name="push_notifications" 
+                        class="sr-only peer"
+                        {% if profile.push_notifications %}checked{% endif %}
+                      >
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Marketing Emails</h4>
+                      <p class="text-sm text-gray-600">Receive product updates and marketing communications</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        name="receive_marketing_emails" 
+                        class="sr-only peer"
+                        {% if user.receive_marketing_emails %}checked{% endif %}
+                      >
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Privacy Settings -->
+              <div class="mb-8">
+                <h3 class="text-md font-medium text-gray-900 mb-4">Privacy</h3>
+                
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Profile Visibility</h4>
+                      <p class="text-sm text-gray-600">Control who can see your profile information</p>
+                    </div>
+                    <select class="border border-gray-300 rounded-md text-sm px-3 py-2">
+                      <option>Public</option>
+                      <option>Members only</option>
+                      <option>Private</option>
+                    </select>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-900">Activity Status</h4>
+                      <p class="text-sm text-gray-600">Show when you're online or last active</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer" checked>
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Account Statistics -->
+              <div class="mb-8">
+                <h3 class="text-md font-medium text-gray-900 mb-4">Account Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-gray-900">{{ user.date_joined|timesince }}</div>
+                    <div class="text-sm text-gray-600">Member since</div>
+                  </div>
+                  
+                  <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-gray-900">
+                      {% if user.last_login %}
+                        {{ user.last_login|timesince }}
+                      {% else %}
+                        Never
+                      {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600">Last login</div>
+                  </div>
+                  
+                  <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold {% if user.email_verified %}text-green-600{% else %}text-red-600{% endif %}">
+                      {% if user.email_verified %}Verified{% else %}Pending{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600">Email status</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Save Button -->
+              <div class="flex justify-end">
                 <button 
                   type="submit" 
-                  class="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  class="px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  Change Password
+                  Save Preferences
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-
-        <!-- Social Accounts -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-          <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-3">
-              Connected Accounts
-            </h3>
-            
-            <div class="space-y-3">
-              <!-- This would be populated with connected social accounts -->
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                  <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  <span class="text-sm text-gray-600">Google</span>
-                </div>
-                <a href="{% url 'google_oauth2_login' %}" class="text-sm text-indigo-600 hover:text-indigo-500">
-                  Connect
-                </a>
-              </div>
-              
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                  <span class="text-sm text-gray-600">GitHub</span>
-                </div>
-                <a href="{% url 'github_login' %}" class="text-sm text-indigo-600 hover:text-indigo-500">
-                  Connect
-                </a>
-              </div>
-            </div>
-            
-            <div class="mt-4">
-              <a 
-                href="{% url 'socialaccount_connections' %}"
-                class="text-sm text-indigo-600 hover:text-indigo-500"
-              >
-                Manage connected accounts →
-              </a>
-            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+// Tab Management
+function showTab(tabName) {
+  // Hide all tab content
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabContents.forEach(content => content.classList.add('hidden'));
+  
+  // Remove active class from all tab buttons
+  const tabButtons = document.querySelectorAll('.tab-button');
+  tabButtons.forEach(button => {
+    button.classList.remove('border-indigo-500', 'text-indigo-600');
+    button.classList.add('border-transparent', 'text-gray-500');
+  });
+  
+  // Show selected tab content
+  document.getElementById(tabName + '-tab').classList.remove('hidden');
+  
+  // Add active class to selected tab button
+  event.target.classList.remove('border-transparent', 'text-gray-500');
+  event.target.classList.add('border-indigo-500', 'text-indigo-600');
+}
+
+// Profile Edit Mode
+let editMode = false;
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const editButton = document.getElementById('edit-toggle');
+  const editFields = document.querySelectorAll('.edit-field');
+  const editActions = document.querySelector('.edit-actions');
+  const inputs = document.querySelectorAll('#profile-form input[readonly], #profile-form textarea[readonly]');
+  
+  if (editMode) {
+    // Enable edit mode
+    editButton.innerHTML = `
+      <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+      </svg>
+      Cancel Edit
+    `;
+    editButton.classList.remove('text-gray-700', 'bg-white', 'hover:bg-gray-50');
+    editButton.classList.add('text-red-700', 'bg-red-50', 'hover:bg-red-100');
+    
+    editFields.forEach(field => field.style.display = 'block');
+    editActions.style.display = 'flex';
+    
+    inputs.forEach(input => {
+      if (input.name !== 'email') { // Keep email readonly
+        input.removeAttribute('readonly');
+        input.classList.remove('bg-gray-50');
+      }
+    });
+  } else {
+    cancelEdit();
+  }
+}
+
+function cancelEdit() {
+  editMode = false;
+  const editButton = document.getElementById('edit-toggle');
+  const editFields = document.querySelectorAll('.edit-field');
+  const editActions = document.querySelector('.edit-actions');
+  const inputs = document.querySelectorAll('#profile-form input, #profile-form textarea');
+  
+  editButton.innerHTML = `
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+    </svg>
+    Edit Profile
+  `;
+  editButton.classList.remove('text-red-700', 'bg-red-50', 'hover:bg-red-100');
+  editButton.classList.add('text-gray-700', 'bg-white', 'hover:bg-gray-50');
+  
+  editFields.forEach(field => field.style.display = 'none');
+  editActions.style.display = 'none';
+  
+  inputs.forEach(input => {
+    if (input.name !== 'email') {
+      input.setAttribute('readonly', 'readonly');
+      input.classList.add('bg-gray-50');
+    }
+  });
+}
+
+// Avatar Preview and Management
+function previewAvatar(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const preview = document.getElementById('avatar-preview');
+      preview.innerHTML = `<img class="h-20 w-20 object-cover rounded-full" src="${e.target.result}" alt="Avatar Preview">`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function removeAvatar() {
+  const preview = document.getElementById('avatar-preview');
+  const input = document.getElementById('avatar-input');
+  
+  // Reset preview to initials
+  preview.innerHTML = `
+    <div class="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center">
+      <span class="text-white text-xl font-bold">
+        {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|default:""|upper }}
+      </span>
+    </div>
+  `;
+  
+  // Clear file input
+  input.value = '';
+  
+  // Add hidden input to indicate avatar removal
+  const removeInput = document.createElement('input');
+  removeInput.type = 'hidden';
+  removeInput.name = 'remove_avatar';
+  removeInput.value = 'true';
+  document.getElementById('profile-form').appendChild(removeInput);
+}
+
+// Bio Character Counter
+const bioTextarea = document.getElementById('bio');
+const bioCounter = document.getElementById('bio-counter');
+
+if (bioTextarea && bioCounter) {
+  bioTextarea.addEventListener('input', function() {
+    const currentLength = this.value.length;
+    bioCounter.textContent = `${currentLength}/500`;
+    
+    if (currentLength > 500) {
+      bioCounter.classList.add('text-red-600');
+      this.classList.add('border-red-500');
+    } else {
+      bioCounter.classList.remove('text-red-600');
+      this.classList.remove('border-red-500');
+    }
+  });
+}
+
+// Password Visibility Toggle
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+  input.setAttribute('type', type);
+}
+
+// Password Strength Checker
+function checkPasswordStrength(password) {
+  const strengthBars = document.querySelectorAll('.password-strength-bar');
+  const strengthText = document.getElementById('password-strength-text');
+  
+  let strength = 0;
+  const checks = [
+    /.{8,}/, // At least 8 characters
+    /[a-z]/, // Lowercase letter
+    /[A-Z]/, // Uppercase letter
+    /[0-9]/, // Number
+    /[^A-Za-z0-9]/ // Special character
+  ];
+  
+  checks.forEach(check => {
+    if (check.test(password)) strength++;
+  });
+  
+  // Reset all bars
+  strengthBars.forEach(bar => {
+    bar.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-green-500');
+    bar.classList.add('bg-gray-200');
+  });
+  
+  // Update strength indicator
+  const strengthLevels = [
+    { text: 'Very Weak', color: 'bg-red-500', bars: 1 },
+    { text: 'Weak', color: 'bg-red-500', bars: 1 },
+    { text: 'Fair', color: 'bg-yellow-500', bars: 2 },
+    { text: 'Good', color: 'bg-yellow-500', bars: 3 },
+    { text: 'Strong', color: 'bg-green-500', bars: 4 }
+  ];
+  
+  if (password.length > 0 && strength > 0) {
+    const level = strengthLevels[Math.min(strength, 4)];
+    strengthText.textContent = level.text;
+    
+    for (let i = 0; i < level.bars; i++) {
+      strengthBars[i].classList.remove('bg-gray-200');
+      strengthBars[i].classList.add(level.color);
+    }
+  } else {
+    strengthText.textContent = 'Password strength';
+  }
+}
+
+// Password Match Checker
+function checkPasswordMatch() {
+  const newPassword = document.getElementById('new_password').value;
+  const confirmPassword = document.getElementById('new_password_confirm').value;
+  const matchText = document.getElementById('password-match-text');
+  
+  if (confirmPassword.length > 0) {
+    if (newPassword === confirmPassword) {
+      matchText.textContent = '✓ Passwords match';
+      matchText.classList.remove('text-red-600');
+      matchText.classList.add('text-green-600');
+    } else {
+      matchText.textContent = '✗ Passwords do not match';
+      matchText.classList.remove('text-green-600');
+      matchText.classList.add('text-red-600');
+    }
+  } else {
+    matchText.textContent = '';
+  }
+}
+
+// Form Validation and AJAX Updates
+document.getElementById('profile-form').addEventListener('submit', function(e) {
+  // Add form validation logic here if needed
+  const bio = document.getElementById('bio').value;
+  if (bio.length > 500) {
+    e.preventDefault();
+    alert('Bio must be 500 characters or less.');
+    return false;
+  }
+});
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+  // Set initial bio counter
+  if (bioTextarea && bioCounter) {
+    const currentLength = bioTextarea.value.length;
+    bioCounter.textContent = `${currentLength}/500`;
+  }
+  
+  // Auto-save functionality (optional)
+  const autoSaveFields = ['bio', 'phone_number', 'country'];
+  autoSaveFields.forEach(fieldName => {
+    const field = document.getElementById(fieldName);
+    if (field) {
+      let timeout;
+      field.addEventListener('input', function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          // Add auto-save logic here if needed
+          console.log(`Auto-saving ${fieldName}: ${this.value}`);
+        }, 2000);
+      });
+    }
+  });
+});
+
+// Theme and accessibility features
+function updateThemePreference(theme) {
+  localStorage.setItem('theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+// Keyboard navigation for tabs
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Tab' && e.altKey) {
+    e.preventDefault();
+    const activeTab = document.querySelector('.tab-button.border-indigo-500');
+    const tabs = document.querySelectorAll('.tab-button');
+    const currentIndex = Array.from(tabs).indexOf(activeTab);
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    tabs[nextIndex].click();
+  }
+});
+</script>
 {% endblock %}
