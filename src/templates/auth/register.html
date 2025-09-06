@@ -1,33 +1,415 @@
-{% extends "base.html" %} {% block head_title %}Register - SaaS{% endblock
-head_title %} {% block content %}
+{% extends "base.html" %}
+{% load widget_tweaks %}
 
-<div
-  class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
->
+{% block head_title %}Register - Django SaaS{% endblock head_title %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-md w-full space-y-8">
+    <!-- Header -->
     <div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
         Create your account
       </h2>
       <p class="mt-2 text-center text-sm text-gray-600">
         Or
-        <a
-          href="{% url 'login' %}"
-          class="font-medium text-indigo-600 hover:text-indigo-500"
-        >
+        <a href="{% url 'auth:login' %}" class="font-medium text-indigo-600 hover:text-indigo-500">
           sign in to your existing account
         </a>
       </p>
     </div>
-    <form class="mt-8 space-y-6" method="POST" action="{% url 'register' %}">
+
+    <!-- Registration Form -->
+    <form class="mt-8 space-y-6" method="POST" action="{% url 'auth:register' %}" id="registrationForm">
       {% csrf_token %}
-      <div class="rounded-md shadow-sm -space-y-px">
+      
+      <!-- Messages -->
+      {% if messages %}
+        <div class="space-y-2">
+          {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% else %}bg-green-100 border border-green-400 text-green-700{% endif %} px-4 py-3 rounded">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="space-y-4">
+        <!-- Name Fields -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="first_name" class="block text-sm font-medium text-gray-700">
+              First Name
+            </label>
+            <input 
+              id="first_name" 
+              name="first_name" 
+              type="text" 
+              autocomplete="given-name"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="John"
+              value="{{ first_name|default:'' }}"
+            >
+          </div>
+          <div>
+            <label for="last_name" class="block text-sm font-medium text-gray-700">
+              Last Name
+            </label>
+            <input 
+              id="last_name" 
+              name="last_name" 
+              type="text" 
+              autocomplete="family-name"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Doe"
+              value="{{ last_name|default:'' }}"
+            >
+          </div>
+        </div>
+
+        <!-- Username Field -->
         <div>
-          <label for="username" class="sr-only">Username</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
+          <label for="username" class="block text-sm font-medium text-gray-700">
+            Username <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="username" 
+            name="username" 
+            type="text" 
+            autocomplete="username" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Choose a username"
+            value="{{ username|default:'' }}"
+            minlength="3"
+          >
+          <div id="usernameHelp" class="mt-1 text-sm text-gray-500">
+            At least 3 characters. Letters, numbers, and underscores only.
+          </div>
+          <div id="usernameStatus" class="mt-1 text-sm"></div>
+        </div>
+
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">
+            Email address <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="email" 
+            name="email" 
+            type="email" 
+            autocomplete="email" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Enter your email"
+            value="{{ email|default:'' }}"
+          >
+          <div id="emailStatus" class="mt-1 text-sm"></div>
+        </div>
+
+        <!-- Password Fields -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">
+            Password <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="password" 
+            name="password" 
+            type="password" 
+            autocomplete="new-password" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Create a password"
+            minlength="8"
+          >
+          <div id="passwordHelp" class="mt-1 text-sm text-gray-500">
+            At least 8 characters with uppercase, lowercase, number, and special character.
+          </div>
+          <div id="passwordStrength" class="mt-1"></div>
+        </div>
+
+        <div>
+          <label for="password_confirm" class="block text-sm font-medium text-gray-700">
+            Confirm Password <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="password_confirm" 
+            name="password_confirm" 
+            type="password" 
+            autocomplete="new-password" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Confirm your password"
+          >
+          <div id="passwordMatchStatus" class="mt-1 text-sm"></div>
+        </div>
+
+        <!-- Terms and Conditions -->
+        <div class="flex items-center">
+          <input 
+            id="terms_accepted" 
+            name="terms_accepted" 
+            type="checkbox" 
+            required
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          >
+          <label for="terms_accepted" class="ml-2 block text-sm text-gray-900">
+            I agree to the 
+            <a href="/terms/" class="text-indigo-600 hover:text-indigo-500">Terms and Conditions</a>
+            and 
+            <a href="/privacy/" class="text-indigo-600 hover:text-indigo-500">Privacy Policy</a>
+            <span class="text-red-500">*</span>
+          </label>
+        </div>
+
+        <!-- Marketing Emails -->
+        <div class="flex items-center">
+          <input 
+            id="marketing_emails" 
+            name="marketing_emails" 
+            type="checkbox" 
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          >
+          <label for="marketing_emails" class="ml-2 block text-sm text-gray-900">
+            I'd like to receive product updates and marketing emails
+          </label>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div>
+        <button 
+          type="submit" 
+          id="submitButton"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Create Account
+        </button>
+      </div>
+
+      <!-- Social Registration Options -->
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-gray-50 text-gray-500">Or sign up with</span>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-3">
+          <!-- Google Signup -->
+          <a 
+            href="{% url 'google_oauth2_login' %}"
+            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span class="ml-2">Google</span>
+          </a>
+
+          <!-- GitHub Signup -->
+          <a 
+            href="{% url 'github_login' %}"
+            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            <span class="ml-2">GitHub</span>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JavaScript for form validation and enhancements -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registrationForm');
+    const submitButton = document.getElementById('submitButton');
+    const usernameField = document.getElementById('username');
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    const passwordConfirmField = document.getElementById('password_confirm');
+    
+    // Real-time validation functions
+    function checkUsername() {
+        const username = usernameField.value.trim();
+        const statusDiv = document.getElementById('usernameStatus');
+        
+        if (username.length < 3) {
+            statusDiv.innerHTML = '<span class="text-yellow-600">Username must be at least 3 characters</span>';
+            return false;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            statusDiv.innerHTML = '<span class="text-red-600">Username can only contain letters, numbers, and underscores</span>';
+            return false;
+        }
+        
+        // AJAX check for availability
+        fetch('{% url "auth:check_username" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'username=' + encodeURIComponent(username)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                statusDiv.innerHTML = '<span class="text-green-600">✓ Username is available</span>';
+            } else {
+                statusDiv.innerHTML = '<span class="text-red-600">✗ ' + data.message + '</span>';
+            }
+        });
+        
+        return true;
+    }
+    
+    function checkEmail() {
+        const email = emailField.value.trim();
+        const statusDiv = document.getElementById('emailStatus');
+        
+        if (!email) return false;
+        
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            statusDiv.innerHTML = '<span class="text-red-600">Please enter a valid email address</span>';
+            return false;
+        }
+        
+        // AJAX check for availability
+        fetch('{% url "auth:check_email" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'email=' + encodeURIComponent(email)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                statusDiv.innerHTML = '<span class="text-green-600">✓ Email is available</span>';
+            } else {
+                statusDiv.innerHTML = '<span class="text-red-600">✗ ' + data.message + '</span>';
+            }
+        });
+        
+        return true;
+    }
+    
+    function checkPasswordStrength() {
+        const password = passwordField.value;
+        const strengthDiv = document.getElementById('passwordStrength');
+        
+        if (!password) {
+            strengthDiv.innerHTML = '';
+            return false;
+        }
+        
+        let score = 0;
+        let feedback = [];
+        
+        // Length check
+        if (password.length >= 8) score++; else feedback.push('at least 8 characters');
+        
+        // Character type checks
+        if (/[a-z]/.test(password)) score++; else feedback.push('lowercase letter');
+        if (/[A-Z]/.test(password)) score++; else feedback.push('uppercase letter');
+        if (/\d/.test(password)) score++; else feedback.push('number');
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++; else feedback.push('special character');
+        
+        // Display strength
+        let strength = '';
+        let color = '';
+        
+        if (score < 2) {
+            strength = 'Very Weak';
+            color = 'text-red-600';
+        } else if (score < 3) {
+            strength = 'Weak';
+            color = 'text-orange-600';
+        } else if (score < 4) {
+            strength = 'Good';
+            color = 'text-yellow-600';
+        } else if (score < 5) {
+            strength = 'Strong';
+            color = 'text-green-600';
+        } else {
+            strength = 'Very Strong';
+            color = 'text-green-700';
+        }
+        
+        let html = `<span class="${color}">Password strength: ${strength}</span>`;
+        if (feedback.length > 0) {
+            html += `<br><span class="text-sm text-gray-600">Missing: ${feedback.join(', ')}</span>`;
+        }
+        
+        strengthDiv.innerHTML = html;
+        return score >= 4;
+    }
+    
+    function checkPasswordMatch() {
+        const password = passwordField.value;
+        const confirm = passwordConfirmField.value;
+        const statusDiv = document.getElementById('passwordMatchStatus');
+        
+        if (!confirm) {
+            statusDiv.innerHTML = '';
+            return false;
+        }
+        
+        if (password === confirm) {
+            statusDiv.innerHTML = '<span class="text-green-600">✓ Passwords match</span>';
+            return true;
+        } else {
+            statusDiv.innerHTML = '<span class="text-red-600">✗ Passwords do not match</span>';
+            return false;
+        }
+    }
+    
+    // Event listeners for real-time validation
+    usernameField.addEventListener('blur', checkUsername);
+    usernameField.addEventListener('input', debounce(checkUsername, 500));
+    
+    emailField.addEventListener('blur', checkEmail);
+    emailField.addEventListener('input', debounce(checkEmail, 500));
+    
+    passwordField.addEventListener('input', checkPasswordStrength);
+    passwordConfirmField.addEventListener('input', checkPasswordMatch);
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Creating Account...';
+    });
+    
+    // Utility function for debouncing
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+});
+</script>
+{% endblock %}
             required
             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
             placeholder="Pick your Username"
