@@ -69,7 +69,9 @@ def customer_dashboard(request):
                 }
             )
 
-        return render(request, "customers/dashboard.html", context)
+        # Redirect to main dashboard instead of separate customer dashboard
+        # The main dashboard now includes all customer functionality
+        return redirect("dashboard:main")
 
     except Exception as e:
         logger.error(
