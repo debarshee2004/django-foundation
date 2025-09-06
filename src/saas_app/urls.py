@@ -49,6 +49,7 @@ urlpatterns = [
         name="user_subscription_cancel",
     ),
     path("accounts/", include("allauth.urls")),
+    path("auth/", include("auth.urls")),  # Our custom auth app URLs
     path("protected/user-only/", user_only_view),
     path("protected/staff-only/", staff_only_view),
     path("protected/", pw_protected_view),
