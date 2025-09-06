@@ -37,7 +37,7 @@
     <ul class="space-y-2">
       <li>
         <a
-          href="#"
+          href="{% url 'dashboard:main' %}"
           class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
         >
           <svg
@@ -50,8 +50,120 @@
             <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
             <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
           </svg>
-          <span class="ml-3">Overview</span>
+          <span class="ml-3">Dashboard</span>
         </a>
+      </li>
+
+      <!-- Profile Management -->
+      <li>
+        <a
+          href="{% url 'profiles:detail' %}"
+          class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
+        >
+          <svg
+            aria-hidden="true"
+            class="w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+          <span class="ml-3">Profile</span>
+        </a>
+      </li>
+
+      <!-- Customer Management Section -->
+      <li>
+        <button
+          type="button"
+          class="flex items-center p-2 w-full text-base font-medium text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+          aria-controls="dropdown-account"
+          data-collapse-toggle="dropdown-account"
+        >
+          <svg
+            aria-hidden="true"
+            class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="flex-1 ml-3 text-left whitespace-nowrap">Account</span>
+          <svg
+            aria-hidden="true"
+            class="w-6 h-6"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+        </button>
+        <ul id="dropdown-account" class="hidden py-2 space-y-2">
+          <li>
+            <a
+              href="{% url 'customers:billing_portal' %}"
+              class="flex items-center p-2 pl-11 w-full text-base font-medium text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+            >
+              <svg
+                class="w-4 h-4 mr-2 text-gray-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9z"
+                ></path>
+              </svg>
+              Billing
+            </a>
+          </li>
+          <li>
+            <a
+              href="{% url 'pricing' %}"
+              class="flex items-center p-2 pl-11 w-full text-base font-medium text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+            >
+              <svg
+                class="w-4 h-4 mr-2 text-gray-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"
+                ></path>
+              </svg>
+              Plans
+            </a>
+          </li>
+          <li>
+            <a
+              href="{% url 'customers:support_center' %}"
+              class="flex items-center p-2 pl-11 w-full text-base font-medium text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+            >
+              <svg
+                class="w-4 h-4 mr-2 text-gray-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0c0 .993-.241 1.929-.668 2.754l-1.524-1.525a3.997 3.997 0 00.078-2.183l1.562-1.562C15.802 8.249 16 9.1 16 10z"
+                  clip-rule="evenodd"
+                ></path>
+              </svg>
+              Support
+            </a>
+          </li>
+        </ul>
       </li>
       <li>
         <button
