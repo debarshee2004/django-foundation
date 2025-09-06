@@ -64,6 +64,7 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username']  # Required when creating superuser
     
     class Meta:
+        app_label = 'auth'
         db_table = 'auth_custom_user'
         verbose_name = 'User'
         verbose_name_plural = 'Users'
@@ -126,7 +127,7 @@ class UserProfile(models.Model):
         blank=True,
         help_text="User's country"
     )
-    timezone = models.CharField(
+    user_timezone = models.CharField(
         max_length=50, 
         default='UTC',
         help_text="User's preferred timezone"

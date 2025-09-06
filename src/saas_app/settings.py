@@ -52,9 +52,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",  # Required for django-allauth
     # Custom apps
-    "auth",  # Our custom authentication app
     "command",
-    "visits", 
+    "visits",
     "subscriptions",
     "customers",
     "checkouts",
@@ -141,7 +140,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ============================================================================
 
 # Use our custom user model instead of Django's default User model
-AUTH_USER_MODEL = 'auth.CustomUser'
+AUTH_USER_MODEL = "auth.CustomUser"
 
 # Sites framework configuration (required for django-allauth)
 SITE_ID = 1
@@ -151,22 +150,22 @@ SITE_ID = 1
 # ============================================================================
 
 # Login/Logout URLs
-LOGIN_URL = '/auth/login/'
-LOGOUT_URL = '/auth/logout/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = "/auth/login/"
+LOGOUT_URL = "/auth/logout/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 
 # Account settings
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Use email instead of username
+ACCOUNT_AUTHENTICATION_METHOD = "email"  # Use email instead of username
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Require email verification
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3  # Email confirmation expires in 3 days
-ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Django SaaS] '
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Django SaaS] "
 
 # Username settings
 ACCOUNT_USERNAME_REQUIRED = True  # Still require username for admin purposes
 ACCOUNT_USERNAME_MIN_LENGTH = 3
-ACCOUNT_USERNAME_BLACKLIST = ['admin', 'root', 'test', 'user', 'api', 'www']
+ACCOUNT_USERNAME_BLACKLIST = ["admin", "root", "test", "user", "api", "www"]
 
 # Password settings
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
@@ -175,7 +174,7 @@ ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300  # Block for 5 minutes (300 seconds)
 
 # Email confirmation settings
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True  # Confirm email immediately when user clicks link
-ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/dashboard/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/dashboard/"
 
 # Session settings
 ACCOUNT_SESSION_REMEMBER = True  # Remember user sessions
@@ -184,13 +183,13 @@ ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True  # Force logout after password change
 # Form settings
 ACCOUNT_SIGNUP_FORM_CLASS = None  # Use default form (can customize later)
 ACCOUNT_FORMS = {
-    'login': 'allauth.account.forms.LoginForm',
-    'signup': 'allauth.account.forms.SignupForm',
-    'add_email': 'allauth.account.forms.AddEmailForm',
-    'change_password': 'allauth.account.forms.ChangePasswordForm',
-    'set_password': 'allauth.account.forms.SetPasswordForm',
-    'reset_password': 'allauth.account.forms.ResetPasswordForm',
-    'reset_password_from_key': 'allauth.account.forms.ResetPasswordKeyForm',
+    "login": "allauth.account.forms.LoginForm",
+    "signup": "allauth.account.forms.SignupForm",
+    "add_email": "allauth.account.forms.AddEmailForm",
+    "change_password": "allauth.account.forms.ChangePasswordForm",
+    "set_password": "allauth.account.forms.SetPasswordForm",
+    "reset_password": "allauth.account.forms.ResetPasswordForm",
+    "reset_password_from_key": "allauth.account.forms.ResetPasswordKeyForm",
 }
 
 # ============================================================================
@@ -199,46 +198,49 @@ ACCOUNT_FORMS = {
 
 SOCIALACCOUNT_PROVIDERS = {
     # Google OAuth2 Configuration
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
         ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
+        "AUTH_PARAMS": {
+            "access_type": "online",
         },
-        'OAUTH_PKCE_ENABLED': True,  # Enable PKCE for better security
-        'VERIFIED_EMAIL': True,  # Trust Google's email verification
-        'VERSION': 'v2',  # Use Google OAuth v2
-        'APP': {
-            'client_id': config('GOOGLE_OAUTH_CLIENT_ID', default=''),
-            'secret': config('GOOGLE_OAUTH_CLIENT_SECRET', default=''),
-            'key': ''
-        }
+        "OAUTH_PKCE_ENABLED": True,  # Enable PKCE for better security
+        "VERIFIED_EMAIL": True,  # Trust Google's email verification
+        "VERSION": "v2",  # Use Google OAuth v2
+        "APP": {
+            "client_id": config("GOOGLE_OAUTH_CLIENT_ID", default=""),
+            "secret": config("GOOGLE_OAUTH_CLIENT_SECRET", default=""),
+            "key": "",
+        },
     },
-    
-    # GitHub OAuth Configuration  
-    'github': {
-        'SCOPE': [
-            'user:email',
-            'read:user',
+    # GitHub OAuth Configuration
+    "github": {
+        "SCOPE": [
+            "user:email",
+            "read:user",
         ],
-        'VERIFIED_EMAIL': True,  # Trust GitHub's email verification
-        'APP': {
-            'client_id': config('GITHUB_OAUTH_CLIENT_ID', default=''),
-            'secret': config('GITHUB_OAUTH_CLIENT_SECRET', default=''),
-        }
-    }
+        "VERIFIED_EMAIL": True,  # Trust GitHub's email verification
+        "APP": {
+            "client_id": config("GITHUB_OAUTH_CLIENT_ID", default=""),
+            "secret": config("GITHUB_OAUTH_CLIENT_SECRET", default=""),
+        },
+    },
 }
 
 # Social account settings
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Don't require email verification for social accounts
+SOCIALACCOUNT_EMAIL_VERIFICATION = (
+    "none"  # Don't require email verification for social accounts
+)
 SOCIALACCOUNT_EMAIL_REQUIRED = True  # But still require email from social providers
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create accounts for social logins
 SOCIALACCOUNT_LOGIN_ON_GET = False  # Require POST for social login (security)
 
 # What to do when social account email conflicts with existing account
-SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Connect to existing account if email matches
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = (
+    True  # Connect to existing account if email matches
+)
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect matching emails
 
 # Store additional social account data
@@ -251,30 +253,30 @@ SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens for later use
 # Session security
 SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
 SESSION_COOKIE_HTTPONLY = True  # Prevent XSS attacks on session cookies
-SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 
 # CSRF protection
 CSRF_COOKIE_SECURE = not DEBUG  # Use secure CSRF cookies in production
 CSRF_COOKIE_HTTPONLY = True  # Prevent XSS attacks on CSRF cookies
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = "Lax"
 
 # Password validation (enhanced)
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        },
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
