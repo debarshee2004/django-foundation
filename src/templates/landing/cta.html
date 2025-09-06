@@ -1,0 +1,134 @@
+<!-- Modern CTA Section -->
+<section
+  class="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden"
+>
+  <!-- Animated Background -->
+  <div class="absolute inset-0">
+    <div
+      class="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full mix-blend-overlay filter blur-xl animate-pulse"
+    ></div>
+    <div
+      class="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full mix-blend-overlay filter blur-xl animate-pulse animation-delay-2000"
+    ></div>
+  </div>
+
+  <div
+    class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center"
+  >
+    <!-- Main CTA Content -->
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+        Stop Building.
+        <span class="text-yellow-300">Start Selling.</span>
+      </h2>
+
+      <p
+        class="text-xl sm:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed"
+      >
+        Everything you need to build, launch, and scale your SaaS business is
+        ready. Focus on what makes you unique, not reinventing the wheel.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+        <a
+          href="{% url 'auth:register' %}"
+          class="group relative px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-2xl shadow-2xl hover:shadow-3xl transform hover:-translate-y-2 transition-all duration-300"
+        >
+          <span class="relative z-10">Start Your Free Trial</span>
+          <div
+            class="absolute inset-0 bg-gradient-to-r from-yellow-200 to-yellow-300 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          ></div>
+          <div
+            class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse"
+          >
+            !
+          </div>
+        </a>
+
+        <a
+          href="/pricing/"
+          class="px-10 py-5 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white hover:text-blue-600 transition-all duration-300 transform hover:-translate-y-1"
+        >
+          View Pricing
+        </a>
+      </div>
+
+      <!-- Feature Highlights -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+        <div class="flex flex-col items-center">
+          <div
+            class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4"
+          >
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">14-Day Free Trial</h3>
+          <p class="text-blue-100 text-center">
+            No credit card required. Cancel anytime.
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <div
+            class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4"
+          >
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Setup Support</h3>
+          <p class="text-blue-100 text-center">
+            Our team helps you get started quickly.
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <div
+            class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4"
+          >
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Scale Instantly</h3>
+          <p class="text-blue-100 text-center">
+            Enterprise-ready from day one.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Enhanced Animation Styles -->
+<style>
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .hover\:shadow-3xl:hover {
+    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
+  }
+</style>
