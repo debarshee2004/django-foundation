@@ -3,10 +3,6 @@ from . import views
 
 app_name = "customers"
 
-# ============================================================================
-# CUSTOMER MANAGEMENT URL PATTERNS
-# ============================================================================
-
 urlpatterns = [
     # Dashboard and main pages
     path("dashboard/", views.customer_dashboard, name="dashboard"),

@@ -12,11 +12,6 @@ from .models import Customer
 logger = logging.getLogger("customers")
 
 
-# ============================================================================
-# CUSTOMER ADMIN CONFIGURATION
-# ============================================================================
-
-
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     """
@@ -321,11 +316,6 @@ class CustomerAdmin(admin.ModelAdmin):
         js = ("admin/js/customer_admin.js",)
 
 
-# ============================================================================
-# INLINE ADMIN CONFIGURATIONS
-# ============================================================================
-
-
 class CustomerInline(admin.StackedInline):
     """
     Inline admin for Customer model to show in User admin
@@ -342,11 +332,6 @@ class CustomerInline(admin.StackedInline):
         "notes",
     ]
     readonly_fields = ["stripe_id", "lifetime_value"]
-
-
-# ============================================================================
-# ADMIN DASHBOARD CUSTOMIZATIONS
-# ============================================================================
 
 
 class CustomerAdminSite(admin.AdminSite):

@@ -336,11 +336,6 @@ class Customer(models.Model):
         return self.user.email
 
 
-# ============================================================================
-# SIGNAL HANDLERS FOR USER LIFECYCLE EVENTS
-# ============================================================================
-
-
 def allauth_user_signed_up_handler(request, user, *args, **kwargs):
     """
     Handle user signup to create customer profile
@@ -492,11 +487,6 @@ try:
     )
 except ImportError:
     logger.warning("UserProfile model not found - profile sync signals not connected")
-
-
-# ============================================================================
-# ADDITIONAL BUSINESS LOGIC FUNCTIONS
-# ============================================================================
 
 
 def create_customer_from_checkout(user, stripe_customer_id=None):

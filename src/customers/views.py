@@ -18,11 +18,7 @@ from auth.models import CustomUser
 logger = logging.getLogger("customers")
 
 
-# ============================================================================
 # CUSTOMER DASHBOARD VIEWS
-# ============================================================================
-
-
 @login_required
 @require_http_methods(["GET"])
 def customer_dashboard(request):
@@ -170,11 +166,7 @@ def sync_customer_data(request):
         return JsonResponse({"success": False, "error": "Failed to sync customer data"})
 
 
-# ============================================================================
 # SUBSCRIPTION MANAGEMENT VIEWS
-# ============================================================================
-
-
 @login_required
 @require_http_methods(["GET", "POST"])
 def subscription_management(request):
@@ -295,11 +287,7 @@ def handle_plan_change(request, customer):
     return redirect("customers:subscription")
 
 
-# ============================================================================
 # CUSTOMER SUPPORT VIEWS
-# ============================================================================
-
-
 @login_required
 @require_http_methods(["GET", "POST"])
 def support_center(request):
@@ -369,11 +357,7 @@ def support_center(request):
         return redirect("customers:dashboard")
 
 
-# ============================================================================
 # API ENDPOINTS FOR FRONTEND INTEGRATION
-# ============================================================================
-
-
 @login_required
 @require_http_methods(["GET"])
 def customer_api_status(request):
@@ -440,11 +424,7 @@ def webhook_stripe(request):
         return JsonResponse({"status": "error"}, status=400)
 
 
-# ============================================================================
 # UTILITY VIEWS
-# ============================================================================
-
-
 @login_required
 @require_http_methods(["POST"])
 def delete_customer_account(request):
