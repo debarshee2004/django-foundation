@@ -135,19 +135,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# ============================================================================
-# CUSTOM USER MODEL CONFIGURATION
-# ============================================================================
-
 # Use our custom user model instead of Django's default User model
 AUTH_USER_MODEL = "auth.CustomUser"
 
 # Sites framework configuration (required for django-allauth)
 SITE_ID = 1
-
-# ============================================================================
-# ENHANCED DJANGO-ALLAUTH CONFIGURATION
-# ============================================================================
 
 # Login/Logout URLs
 LOGIN_URL = "/auth/login/"
@@ -191,10 +183,6 @@ ACCOUNT_FORMS = {
     "reset_password": "allauth.account.forms.ResetPasswordForm",
     "reset_password_from_key": "allauth.account.forms.ResetPasswordKeyForm",
 }
-
-# ============================================================================
-# SOCIAL AUTHENTICATION PROVIDERS CONFIGURATION
-# ============================================================================
 
 SOCIALACCOUNT_PROVIDERS = {
     # Google OAuth2 Configuration
@@ -245,10 +233,6 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect matching 
 
 # Store additional social account data
 SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens for later use
-
-# ============================================================================
-# SECURITY SETTINGS FOR AUTHENTICATION
-# ============================================================================
 
 # Session security
 SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
